@@ -31,4 +31,12 @@ python3 -m simulation_wine --setting "estimated"
 The script ```codes/simulation_wine.py``` supports two settings: (1) varying $\rho$, and (2) iso-DRL with estimated $\rho$. To see the distribution of the estimated $\rho$, run the script ```codes/simulation_rho_wine.py```.
 
 
+### Figures
+
+Figures in the paper are reproduced in the notebook ```plot.ipynb```.
+
+
+
+
+
 
