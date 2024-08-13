@@ -80,12 +80,12 @@ def compar(seed, X1_, y1_, X2_, y2_, alpha, clf_pre, f_div, mu_shift=0, t_idx=10
     cov_y1_ = (y12_PI[:,0] <= y12) * (y12_PI[:,1] >= y12)
 
     # wtd-CP
-    wts = clf_pre.predict_proba(X_cal)[:,0]
-    wts2 = clf_pre.predict_proba(X2_)[:,0]
+    wts = clf_pre.predict_proba(X_cal)[:,0] / (1 - clf_pre.predict_proba(X_cal)[:,0])
+    wts2 = clf_pre.predict_proba(X2_)[:,0] / (1 - clf_pre.predict_proba(X2_)[:,0])
     y2_PI_wtd, len2_wtd = split_CP_LS(X_tr, y_tr, X_cal, y_cal, X2_, alpha, wts, wts2)
     cov_y2_wtd = (y2_PI_wtd[:,0] <= y2_) * (y2_PI_wtd[:,1] >= y2_)
     
-    wts12 = clf_pre.predict_proba(X12)[:,0]
+    wts12 = clf_pre.predict_proba(X12)[:,0] / (1 - clf_pre.predict_proba(X12)[:,0])
     y12_PI_wtd, len12_wtd = split_CP_LS(X_tr, y_tr, X_cal, y_cal, X12, alpha, wts, wts12)
     cov_y1_wtd = (y12_PI_wtd[:,0] <= y12) * (y12_PI_wtd[:,1] >= y12)
 
