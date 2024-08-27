@@ -14,7 +14,7 @@ The script ```codes/simulation.py``` reproduces results for synthetic datasets. 
 
 
 ```bash
-python3 -m simulation --mu_shift 2 --t_idx 0.25 --setting "pre_rt"
+python3 -m simulation --mu_shift 2 --t_idx 6 --setting "pre_rt"
 ```
 
 The argument ```mu_shift``` controls the strength of covariate shift in terms of the Gaussian means and ```t_idx``` controls the strength of the the rank-one perturbation in the covariance matrix of target distribution, which controls the misspecification of the logistic regression in estimating density ratios. The script supports two settings: (1) varying splitting ratio in estimating the density ratio, and (2) varying $\rho$, which is the radius of $f$-divergence ball.
