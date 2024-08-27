@@ -16,6 +16,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 from scipy.stats import multivariate_normal
 
+import tqdm
+
 from utils import *
 from iso_proj import *
 
@@ -80,12 +82,12 @@ def compar(seed, X1_, y1_, X2_, y2_, alpha, clf_pre, f_div, mu_shift=0, t_idx=10
     cov_y1_ = (y12_PI[:,0] <= y12) * (y12_PI[:,1] >= y12)
 
     # wtd-CP
-    wts = clf_pre.predict_proba(X_cal)[:,0] / (1 - clf_pre.predict_proba(X_cal)[:,0])
-    wts2 = clf_pre.predict_proba(X2_)[:,0] / (1 - clf_pre.predict_proba(X2_)[:,0])
+    wts = clf_pre.predict_proba(X_cal)[:,0]/(1-clf_pre.predict_proba(X_cal)[:,0])
+    wts2 = clf_pre.predict_proba(X2_)[:,0]/(1-clf_pre.predict_proba(X2_)[:,0])
     y2_PI_wtd, len2_wtd = split_CP_LS(X_tr, y_tr, X_cal, y_cal, X2_, alpha, wts, wts2)
     cov_y2_wtd = (y2_PI_wtd[:,0] <= y2_) * (y2_PI_wtd[:,1] >= y2_)
     
-    wts12 = clf_pre.predict_proba(X12)[:,0] / (1 - clf_pre.predict_proba(X12)[:,0])
+    wts12 = clf_pre.predict_proba(X12)[:,0]/(1-clf_pre.predict_proba(X12)[:,0])
     y12_PI_wtd, len12_wtd = split_CP_LS(X_tr, y_tr, X_cal, y_cal, X12, alpha, wts, wts12)
     cov_y1_wtd = (y12_PI_wtd[:,0] <= y12) * (y12_PI_wtd[:,1] >= y12)
 
@@ -93,7 +95,12 @@ def compar(seed, X1_, y1_, X2_, y2_, alpha, clf_pre, f_div, mu_shift=0, t_idx=10
     if oracle:
         d = X2_.shape[1]
         mu_vec = mu_shift*np.ones(d)/np.sqrt(d)
-        cov2 = np.eye(d) + t_idx*np.outer(mu_vec, mu_vec)
+        # cov2 = np.eye(d) + t_idx*np.outer(mu_vec, mu_vec)
+        # mu_vec = np.zeros(d)
+        # mu_vec[0] = mu_shift
+        # cov2 = np.eye(d) + t_idx*np.outer(mu_vec, mu_vec)
+        cov2 = np.eye(d) + (t_idx/d)*np.ones((d,d))
+
         p1 = multivariate_normal.pdf(X_cal, mean=mu_vec, cov=cov2)
         p0 = multivariate_normal.pdf(X_cal, mean=np.zeros(d), cov=np.eye(d))
         p12 = multivariate_normal.pdf(X2_, mean=mu_vec, cov=cov2)
@@ -137,7 +144,7 @@ def compar(seed, X1_, y1_, X2_, y2_, alpha, clf_pre, f_div, mu_shift=0, t_idx=10
     cov_y2_iso = np.zeros(len(rho_seq)*n2_).reshape((len(rho_seq), n2_))
 
     idx_rho = 0
-    for rho in rho_seq:
+    for rho in tqdm(rho_seq):
         if f_div == 'kl':
             lam, delta[idx_rho] = iso_dual_kl(n1_-n11,p0,r,rho,False)
             lam_iso, delta_iso[idx_rho] = iso_dual_kl(n1_-n11,p0,r_iso,rho,False)
@@ -226,12 +233,12 @@ def compar_generic(seed, X1_, y1_, X2_, y2_, alpha, clf_pre, f_div, mu_shift=0, 
     cov_y1_ = (y12_PI[:,0] <= y12) * (y12_PI[:,1] >= y12)
 
     # wtd-CP
-    wts = clf_pre.predict_proba(X_cal)[:,0]
-    wts2 = clf_pre.predict_proba(X2_)[:,0]
+    wts = clf_pre.predict_proba(X_cal)[:,0]/(1-clf_pre.predict_proba(X_cal)[:,0])
+    wts2 = clf_pre.predict_proba(X2_)[:,0]/(1-clf_pre.predict_proba(X2_)[:,0])
     y2_PI_wtd, len2_wtd = split_CP_LS(X_tr, y_tr, X_cal, y_cal, X2_, alpha, wts, wts2)
     cov_y2_wtd = (y2_PI_wtd[:,0] <= y2_) * (y2_PI_wtd[:,1] >= y2_)
     
-    wts12 = clf_pre.predict_proba(X12)[:,0]
+    wts12 = clf_pre.predict_proba(X12)[:,0]/(1-clf_pre.predict_proba(X12)[:,0])
     y12_PI_wtd, len12_wtd = split_CP_LS(X_tr, y_tr, X_cal, y_cal, X12, alpha, wts, wts12)
     cov_y1_wtd = (y12_PI_wtd[:,0] <= y12) * (y12_PI_wtd[:,1] >= y12)
 

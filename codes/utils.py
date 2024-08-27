@@ -202,7 +202,7 @@ def iso_dro(K,p,r,rho,iso,f_div):
         C1 = NonlinearConstraint(cons1, 1/p_mean, 1/p_mean)
         C2 = NonlinearConstraint(cons2, -np.inf, rho/p_mean)
         C3 = LinearConstraint(A, np.zeros(K), np.inf*np.ones(K))
-        B1 = Bounds(np.zeros(K), np.inf*np.ones(K))
+        B1 = Bounds(np.zeros(K), 100*np.ones(K))
         trial_id = 0
         res_status = 1
         while res_status and (trial_id<=10):

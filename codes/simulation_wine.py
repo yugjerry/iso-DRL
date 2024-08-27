@@ -63,46 +63,50 @@ def est_rho_(X01, X02, clf_pre, marginal_rt):
     
     return r_hat
 
-def simu_(seed, X_white, y_white, X_red, y_red, alpha, pre_rt, f_div, rho_seq):
+def simu_(seed, X_white, y_white, X_red, y_red, alpha, n_pre, f_div, rho_seq):
     
     n_red = X_red.shape[0]
     n_white = X_white.shape[0]
-    
-    s_red0 = np.random.uniform(0, 1, n_red)
-    subsample_idx_red0 = (s_red0 < 0.3)
-    s_white0 = np.random.uniform(0, 1, n_white)
-    subsample_idx_white0 = (s_white0 < 0.3)
 
-    X01 = X_white[subsample_idx_white0,:]
-    X02 = X_red[subsample_idx_red0,:]
-    
-    X_white = X_white[~subsample_idx_white0,:]
-    y_white = y_white[~subsample_idx_white0]
-    X_red = X_red[~subsample_idx_red0,:]
-    y_red = y_red[~subsample_idx_red0]
-    
+
+    a_red = np.arange(n_red)
+    np.random.shuffle(a_red)
+    a_white = np.arange(n_white)
+    np.random.shuffle(a_white)
+
+    X_red = X_red[a_red,:]
+    y_red = y_red[a_red]
+    X_white = X_white[a_white,:]
+    y_white = y_white[a_white]
+
+    n_white0 = 1000
+    n_red0 = 500
+    X01 = X_white[:n_white0,:]
+    X02 = X_red[:n_red0,:]
+
+    X_red = X_red[n_red0:,:]
+    y_red = y_red[n_red0:]
+    X_white = X_white[n_white0:,:]
+    y_white = y_white[n_white0:]
+
     n_red = X_red.shape[0]
     n_white = X_white.shape[0]
-    
-    rt_white = pre_rt
-    s_red = np.random.uniform(0, 1, n_red)
-    subsample_idx_red = (s_red < pre_rt)
-    s_white = np.random.uniform(0, 1, n_white)
-    subsample_idx_white = (s_white < rt_white)
-    
-    marginal_rt = np.sum(subsample_idx_white) / np.sum(subsample_idx_red)
 
-    X_white_pre = X_white[subsample_idx_white,:]
-    X_red_pre = X_red[subsample_idx_red,:]
+    X_white_pre = X_white[:n_pre,:]
+    X_red_pre = X_red[:n_pre,:]
     X_total_pre = np.concatenate((X_red_pre, X_white_pre), axis=0)
     label_pre = np.zeros(X_white_pre.shape[0] + X_red_pre.shape[0])
     label_pre[X_red_pre.shape[0]:] = 1
     clf_pre = LogisticRegression(random_state=0).fit(X_total_pre, label_pre)
 
-    X_white_ = X_white[~subsample_idx_white,:]
-    X_red_ = X_red[~subsample_idx_red,:]
-    y_white_ = y_white[~subsample_idx_white]
-    y_red_ = y_red[~subsample_idx_red]
+    marginal_rt = X_white_pre.shape[0] / X_red_pre.shape[0]
+
+    n_tr = 3800
+    n_te = 1000
+    X_white_ = X_white[n_pre:(n_pre+n_tr),:]
+    X_red_ = X_red[n_pre:(n_pre+n_te),:]
+    y_white_ = y_white[n_pre:(n_pre+n_tr)]
+    y_red_ = y_red[n_pre:(n_pre+n_te)]
     
     rho_hat = est_rho_(X01, X02, clf_pre, marginal_rt)
     
@@ -118,7 +122,8 @@ def simu_(seed, X_white, y_white, X_red, y_red, alpha, pre_rt, f_div, rho_seq):
 print("\nParsing input parameters...")
 parser = argparse.ArgumentParser()
 parser.add_argument('--alpha', type=float, default=0.1, help='target coverage rate')
-parser.add_argument('--pre_rt', type=float, default=0.02, help='ratio of sample for density ratio estimation')
+# parser.add_argument('--pre_rt', type=float, default=0.02, help='ratio of sample for density ratio estimation')
+parser.add_argument('--n_pre', type=int, default=50, help='sample for density ratio estimation')
 parser.add_argument('--f_div', type=str, default='kl', help='f-divergence for DRO')
 parser.add_argument('--setting', type=str, default='reweighted', help='rho | estimated')
 parser.add_argument('--repN', type=int, default=1000, help='number of repetitions')
@@ -130,12 +135,13 @@ alpha = args.alpha
 f_div = args.f_div
 setting = args.setting
 repN = args.repN
-pre_rt = args.pre_rt
+# pre_rt = args.pre_rt
+n_pre = args.n_pre
 
 
 if setting == "rho":
     print("Setting: varying rho in DRO...\n")
-    rho_seq = np.linspace(0.02, 2, 100)
+    rho_seq = np.linspace(0.02, 2, 50)
 elif setting == "estimated":
     print("Setting: estimated rho...\n")
     rho_seq = []
@@ -172,10 +178,13 @@ rho_hat_df = pd.DataFrame()
 
 if __name__ == "__main__":
     with tqdm_joblib(tqdm(desc="Running...", total=repN)) as progress_bar:
-        results = Parallel(n_jobs=num_cores)(delayed(simu_)(i, X_white, y_white, X_red, y_red, alpha, pre_rt, f_div, rho_seq) for i in range(repN))
+        # results = Parallel(n_jobs=num_cores)(delayed(simu_)(i, X_white, y_white, X_red, y_red, alpha, pre_rt, f_div, rho_seq) for i in range(repN))
+        results = Parallel(n_jobs=num_cores)(delayed(simu_)(i, X_white, y_white, X_red, y_red, alpha, n_pre, f_div, rho_seq) for i in range(repN))
     results = np.array(results)
-    file_dir1 = './result/result_wine/cov_wine_%s_%s_%s_%s.csv'% (repN,f_div,pre_rt,setting)
-    file_dir2 = './result/result_wine/len_wine_%s_%s_%s_%s.csv'% (repN,f_div,pre_rt,setting)
+    # file_dir1 = './result/result_wine/cov_wine_%s_%s_%s_%s.csv'% (repN,f_div,pre_rt,setting)
+    # file_dir2 = './result/result_wine/len_wine_%s_%s_%s_%s.csv'% (repN,f_div,pre_rt,setting)
+    file_dir1 = './result/result_wine/cov_wine_%s_%s_%s_%s.csv'% (repN,f_div,n_pre,setting)
+    file_dir2 = './result/result_wine/len_wine_%s_%s_%s_%s.csv'% (repN,f_div,n_pre,setting)
     os.makedirs(os.path.dirname(file_dir1), exist_ok=True)
 
     df_cov = pd.DataFrame(results[:,:l_])
